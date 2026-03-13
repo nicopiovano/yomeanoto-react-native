@@ -1,75 +1,43 @@
 import { useEffect, useState } from "react";
-import { View, Text, ScrollView, Pressable, Alert, Linking } from "react-native";
+import { View, Text, ScrollView } from "react-native";
 import { Header } from "@/components/Header";
 import { PlayerCard } from "@/components/PlayerCard";
 import { useNotifications } from "@/contexts/NotificationContext";
 import { friends as mockFriends, nearbyPlayers } from "@/mocks/players";
-import { getFriends, getFriendSuggestions, addFriend, removeFriend } from "@/services/friendService";
+import { getFriends, getFriendSuggestions, removeFriend } from "@/services/friendService";
+import { PlayerDetailModal } from "@/components/PlayerDetailModal";
+import type { Player } from "@/mocks/players";
 
 export default function FriendsScreen() {
   const [friends, setFriends] = useState(mockFriends);
   const [suggestions, setSuggestions] = useState(nearbyPlayers);
+  const [pendingIds, setPendingIds] = useState<Set<number>>(new Set());
   const { addNotification } = useNotifications();
+  const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
 
   useEffect(() => {
-    // Preparado para backend: si USE_MOCKS = false, getFriends/getFriendSuggestions
     getFriends().then(setFriends).catch(() => {});
     getFriendSuggestions().then(setSuggestions).catch(() => {});
   }, []);
 
-  const handleChatWhatsApp = (name: string) => {
-    const phone = "5491100000000"; // placeholder; vendrá del backend
-    const url = `https://wa.me/${phone}?text=${encodeURIComponent(
-      `Hola ${name}! Te escribo desde FAP para organizar un partido ⚽`
-    )}`;
-    Linking.openURL(url);
-  };
-
-  const handleRemoveFriend = (playerId: number, name: string) => {
-    Alert.alert(
-      "Eliminar amigo",
-      `¿Querés eliminar a ${name} de tus amigos?`,
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Eliminar",
-          style: "destructive",
-          onPress: async () => {
-            setFriends((prev) => prev.filter((f) => f.id !== playerId));
-            await removeFriend(playerId);
-            addNotification({
-              type: "system",
-              title: "Amigo eliminado",
-              message: `Eliminaste a ${name} de tus amigos`,
-              read: true,
-            });
-          },
-        },
-      ]
-    );
-  };
-
-  const handleAddFriend = async (playerId: number, name: string) => {
-    if (friends.some((f) => f.id === playerId)) return;
-    const player = suggestions.find((p) => p.id === playerId);
-    if (!player) return;
-
-    setFriends((prev) => [...prev, player]);
-    await addFriend(playerId);
+  const handleRemoveFriend = async (playerId: number) => {
+    const name = friends.find((f) => f.id === playerId)?.name ?? "";
+    setFriends((prev) => prev.filter((f) => f.id !== playerId));
+    await removeFriend(playerId);
     addNotification({
-      type: "player_invite",
-      title: "Nuevo amigo",
-      message: `Ahora sos amigo de ${name}`,
+      type: "system",
+      title: "Amigo eliminado",
+      message: `Eliminaste a ${name} de tus amigos`,
       read: true,
-      data: { playerId },
     });
   };
 
-  const handleInviteToMatch = (playerId: number, name: string) => {
+  const handleSendRequest = (playerId: number, name: string) => {
+    setPendingIds((prev) => new Set(prev).add(playerId));
     addNotification({
-      type: "match_invite",
-      title: "Invitación enviada",
-      message: `Invitaste a ${name} a un partido desde tus amigos`,
+      type: "player_invite",
+      title: "Solicitud de amistad enviada",
+      message: `Enviaste una solicitud de amistad a ${name}. Te notificamos cuando acepte.`,
       read: true,
       data: { playerId },
     });
@@ -94,32 +62,12 @@ export default function FriendsScreen() {
           ) : (
             <View className="gap-3">
               {friends.map((friend) => (
-                <View key={friend.id} className="gap-2">
-                  <PlayerCard
-                    {...friend}
-                    invited={false}
-                    onInvite={() => handleInviteToMatch(friend.id, friend.name)}
-                    mode="invite"
-                  />
-                  <View className="flex-row gap-2 mb-1">
-                    <Pressable
-                      onPress={() => handleChatWhatsApp(friend.name)}
-                      className="flex-1 py-2 rounded-xl bg-green-500/20 border border-green-500/30 items-center"
-                    >
-                      <Text className="text-green-400 text-sm font-medium">
-                        Chatear por WhatsApp
-                      </Text>
-                    </Pressable>
-                    <Pressable
-                      onPress={() => handleRemoveFriend(friend.id, friend.name)}
-                      className="flex-1 py-2 rounded-xl bg-red-500/10 border border-red-500/30 items-center"
-                    >
-                      <Text className="text-red-400 text-sm font-medium">
-                        Eliminar vínculo
-                      </Text>
-                    </Pressable>
-                  </View>
-                </View>
+                <PlayerCard
+                  key={friend.id}
+                  {...friend}
+                  mode="details"
+                  onPress={() => setSelectedPlayer(friend)}
+                />
               ))}
             </View>
           )}
@@ -134,19 +82,30 @@ export default function FriendsScreen() {
             historial de partidos.
           </Text>
           <View className="gap-3">
-            {suggestions.map((player) => (
-              <View key={player.id} className="gap-2">
+            {suggestions.map((player) => {
+              const isAlreadyFriend = friends.some((f) => f.id === player.id);
+              if (isAlreadyFriend) return null;
+              return (
                 <PlayerCard
+                  key={player.id}
                   {...player}
-                  invited={friends.some((f) => f.id === player.id)}
-                  onInvite={() => handleAddFriend(player.id, player.name)}
+                  invited={pendingIds.has(player.id)}
+                  mode="connect"
+                  onInvite={() => handleSendRequest(player.id, player.name)}
+                  onPress={() => setSelectedPlayer(player)}
                 />
-              </View>
-            ))}
+              );
+            })}
           </View>
         </View>
       </ScrollView>
+
+      <PlayerDetailModal
+        player={selectedPlayer}
+        visible={!!selectedPlayer}
+        onClose={() => setSelectedPlayer(null)}
+        onRemoveFriend={handleRemoveFriend}
+      />
     </View>
   );
 }
-

@@ -6,6 +6,7 @@ import { TournamentCard } from "@/components/TournamentCard";
 import { TournamentDetailModal } from "@/components/TournamentDetailModal";
 import { TeamCard } from "@/components/TeamCard";
 import { useNotifications } from "@/contexts/NotificationContext";
+import { usePlayerLists } from "@/contexts/PlayerListsContext";
 import { tournaments } from "@/mocks/tournaments";
 import { teams } from "@/mocks/teams";
 import type { Tournament } from "@/mocks/tournaments";
@@ -13,25 +14,27 @@ import type { Tournament } from "@/mocks/tournaments";
 export default function CommunityScreen() {
   const insets = useSafeAreaInsets();
   const { addNotification } = useNotifications();
+  const { teams: myTeams } = usePlayerLists();
   const [joinedTeamIds, setJoinedTeamIds] = useState<Set<number>>(new Set());
   const [enrolledTournamentIds, setEnrolledTournamentIds] = useState<Set<number>>(new Set());
   const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(null);
 
   const handleEnroll = useCallback(
-    (tournament: Tournament) => {
+    (tournament: Tournament, teamId: number) => {
+      const team = myTeams.find((t) => t.id === teamId);
       setEnrolledTournamentIds((prev) => new Set(prev).add(tournament.id));
       setSelectedTournament(null);
 
       addNotification({
         type: "system",
         title: "Inscripción confirmada",
-        message: `Tu equipo fue inscripto en ${tournament.name}`,
+        message: `${team?.name ?? "Tu equipo"} fue inscripto en ${tournament.name}`,
         read: false,
       });
 
-      Alert.alert("¡Inscripción enviada!", "Te vamos a notificar cuando se confirme tu lugar.");
+      Alert.alert("¡Inscripción enviada!", `${team?.name ?? "Tu equipo"} fue inscripto. Te vamos a notificar cuando se confirme tu lugar.`);
     },
-    [addNotification]
+    [addNotification, myTeams]
   );
 
   const handleTeamJoin = useCallback(

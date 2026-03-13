@@ -8,6 +8,7 @@ import {
   Linking,
   Platform,
   Alert,
+  Image,
 } from "react-native";
 import {
   Calendar,
@@ -20,20 +21,26 @@ import {
   Share2,
   Inbox,
   Ban,
+  UserPlus,
 } from "lucide-react-native";
 import { useLocalSearchParams, router } from "expo-router";
 import { Header } from "@/components/Header";
 import { FieldIcon } from "@/components/FieldIcon";
 import { MatchStatusBadge } from "@/components/MatchStatusBadge";
 import { EnrollmentRequestsModal } from "@/components/EnrollmentRequestsModal";
+import { InviteFriendModal } from "@/components/InviteFriendModal";
+import { PlayerDetailModal } from "@/components/PlayerDetailModal";
 import { useMatchEnrollment } from "@/contexts/MatchEnrollmentContext";
 import { getMatchById } from "@/services/matchService";
 import type { Match } from "@/mocks/matches";
+import type { Player } from "@/mocks/players";
 
 export default function MatchDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [match, setMatch] = useState<Match | null>(null);
   const [showRequests, setShowRequests] = useState(false);
+  const [showInvite, setShowInvite] = useState(false);
+  const [selectedCreator, setSelectedCreator] = useState<Player | null>(null);
   const {
     getStatus,
     isCreator,
@@ -121,9 +128,23 @@ export default function MatchDetailScreen() {
     Linking.openURL(url);
   };
 
+  const handleCreatorPress = () => {
+    if (!match.createdBy) return;
+    const creatorAsPlayer: Player = {
+      id: match.createdBy.id,
+      name: match.createdBy.name,
+      position: "Organizador",
+      level: "",
+      distance: "",
+    };
+    setSelectedCreator(creatorAsPlayer);
+  };
+
   const filledSpots = match.currentPlayers ?? 0;
   const totalSpots = match.maxPlayers ?? filledSpots + match.playersNeeded;
   const progressPercent = totalSpots > 0 ? (filledSpots / totalSpots) * 100 : 0;
+  const canInviteFriends =
+    enrollmentStatus === "confirmed" && !matchCancelled && match.playersNeeded > 0;
 
   const renderFooterButton = () => {
     if (matchCancelled) {
@@ -216,6 +237,19 @@ export default function MatchDetailScreen() {
           <View className="px-3 py-1 bg-[#0a0a0a] rounded-full border border-gray-800">
             <Text className="text-gray-300 text-sm">{match.gender}</Text>
           </View>
+          {match.matchLevel && (
+            <View className={`px-3 py-1 rounded-full border ${
+              match.matchLevel === "Competitivo"
+                ? "bg-orange-500/10 border-orange-500/30"
+                : "bg-cyan-500/10 border-cyan-500/30"
+            }`}>
+              <Text className={`text-sm ${
+                match.matchLevel === "Competitivo" ? "text-orange-400" : "text-cyan-400"
+              }`}>
+                {match.matchLevel}
+              </Text>
+            </View>
+          )}
           {(enrollmentStatus !== "none" || userIsCreator) && (
             <MatchStatusBadge
               status={enrollmentStatus}
@@ -252,7 +286,12 @@ export default function MatchDetailScreen() {
           {match.location && (
             <View className="flex-row items-center gap-3">
               <MapPin color="#9ca3af" size={18} />
-              <Text className="text-white">{match.location}</Text>
+              <View>
+                <Text className="text-white">{match.location}</Text>
+                {match.address && (
+                  <Text className="text-gray-400 text-sm">{match.address}</Text>
+                )}
+              </View>
             </View>
           )}
           <View className="flex-row items-center gap-3">
@@ -334,7 +373,10 @@ export default function MatchDetailScreen() {
         )}
 
         {match.createdBy && !userIsCreator && (
-          <View className="bg-[#1a1a1a] rounded-2xl p-4 border border-gray-800">
+          <Pressable
+            onPress={handleCreatorPress}
+            className="bg-[#1a1a1a] rounded-2xl p-4 border border-gray-800"
+          >
             <Text className="text-gray-500 text-xs mb-3">ORGANIZADO POR</Text>
             <View className="flex-row items-center gap-3">
               <View className="w-12 h-12 rounded-full bg-gray-700 items-center justify-center">
@@ -342,7 +384,7 @@ export default function MatchDetailScreen() {
                   {match.createdBy.name.charAt(0)}
                 </Text>
               </View>
-              <View>
+              <View className="flex-1">
                 <Text className="text-white font-medium">
                   {match.createdBy.name}
                 </Text>
@@ -350,8 +392,9 @@ export default function MatchDetailScreen() {
                   {match.createdBy.username}
                 </Text>
               </View>
+              <Text className="text-gray-500 text-xs">Ver perfil →</Text>
             </View>
-          </View>
+          </Pressable>
         )}
 
         {match.lat && match.lng && (
@@ -385,6 +428,14 @@ export default function MatchDetailScreen() {
               <Share2 color="#ffffff" size={22} />
             </Pressable>
           )}
+          {!matchCancelled && canInviteFriends && (
+            <Pressable
+              onPress={() => setShowInvite(true)}
+              className="w-14 h-14 bg-[#1a1a1a] border border-gray-800 rounded-2xl items-center justify-center"
+            >
+              <UserPlus color="#ffffff" size={22} />
+            </Pressable>
+          )}
           {renderFooterButton()}
         </View>
       </View>
@@ -397,6 +448,20 @@ export default function MatchDetailScreen() {
           onClose={() => setShowRequests(false)}
         />
       )}
+
+      <InviteFriendModal
+        visible={showInvite}
+        onClose={() => setShowInvite(false)}
+        matchTitle={match.title}
+        matchDate={match.date}
+        matchTime={match.time}
+      />
+
+      <PlayerDetailModal
+        player={selectedCreator}
+        visible={!!selectedCreator}
+        onClose={() => setSelectedCreator(null)}
+      />
     </View>
   );
 }
