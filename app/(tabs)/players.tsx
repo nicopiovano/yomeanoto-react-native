@@ -3,6 +3,7 @@ import { Search } from "lucide-react-native";
 import { useState, useCallback, useMemo } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { PlayerCard } from "@/components/PlayerCard";
+import { PlayerDetailModal } from "@/components/PlayerDetailModal";
 import { useNotifications } from "@/contexts/NotificationContext";
 import {
   nearbyPlayers,
@@ -19,6 +20,7 @@ export default function PlayersScreen() {
   const [searchQuery, setSearchQuery] = useState("");
   const [friendsList, setFriendsList] = useState<Player[]>(initialFriends);
   const [requestsList, setRequestsList] = useState<Player[]>(initialRequests);
+  const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
   const insets = useSafeAreaInsets();
   const { addNotification } = useNotifications();
 
@@ -175,18 +177,33 @@ export default function PlayersScreen() {
               mode="request"
               onAccept={() => handleAcceptRequest(player)}
               onReject={() => handleRejectRequest(player)}
+              onPress={() => setSelectedPlayer(player)}
+            />
+          ) : activeTab === 1 ? (
+            <PlayerCard
+              key={player.id}
+              {...player}
+              mode="details"
+              onPress={() => setSelectedPlayer(player)}
             />
           ) : (
             <PlayerCard
               key={player.id}
               {...player}
               invited={invitedIds.has(player.id)}
-              mode={activeTab === 1 ? "invite" : "connect"}
+              mode="connect"
               onInvite={() => handleInvite(player.id, player.name)}
+              onPress={() => setSelectedPlayer(player)}
             />
           )
         )}
       </ScrollView>
+
+      <PlayerDetailModal
+        player={selectedPlayer}
+        visible={!!selectedPlayer}
+        onClose={() => setSelectedPlayer(null)}
+      />
     </View>
   );
 }

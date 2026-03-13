@@ -12,7 +12,7 @@ import { router } from "expo-router";
 import { FieldIcon } from "./FieldIcon";
 import { MatchStatusBadge } from "./MatchStatusBadge";
 import type { EnrollmentStatus } from "@/contexts/MatchEnrollmentContext";
-import type { MatchCreator } from "@/mocks/matches";
+import type { MatchCreator, MatchLevel } from "@/mocks/matches";
 
 interface MatchCardProps {
   id: number;
@@ -26,6 +26,7 @@ interface MatchCardProps {
   gender: string;
   intensity: string;
   location?: string;
+  matchLevel?: MatchLevel;
   enrollmentStatus?: EnrollmentStatus;
   isCreator?: boolean;
   pendingRequests?: number;
@@ -45,6 +46,7 @@ export function MatchCard({
   gender,
   intensity,
   location,
+  matchLevel,
   enrollmentStatus,
   isCreator,
   pendingRequests,
@@ -86,9 +88,26 @@ export function MatchCard({
       )}
 
       <View className="flex-row justify-between items-start mb-3">
-        <Text className={`text-lg font-medium flex-1 pr-2 ${isCancelled ? "text-gray-500 line-through" : "text-white"}`}>
-          {title}
-        </Text>
+        <View className="flex-1 pr-2">
+          <Text className={`text-lg font-medium ${isCancelled ? "text-gray-500 line-through" : "text-white"}`}>
+            {title}
+          </Text>
+          {matchLevel && (
+            <View className="flex-row mt-1">
+              <View className={`px-2 py-0.5 rounded-full border ${
+                matchLevel === "Competitivo"
+                  ? "bg-orange-500/10 border-orange-500/30"
+                  : "bg-cyan-500/10 border-cyan-500/30"
+              }`}>
+                <Text className={`text-[10px] font-medium ${
+                  matchLevel === "Competitivo" ? "text-orange-400" : "text-cyan-400"
+                }`}>
+                  {matchLevel}
+                </Text>
+              </View>
+            </View>
+          )}
+        </View>
         <View className="bg-[#0a0a0a] px-3 py-1.5 rounded-lg border border-gray-800">
           <View className="flex-row items-center gap-1">
             <Calendar color="#d1d5db" size={12} />

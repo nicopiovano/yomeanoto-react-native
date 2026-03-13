@@ -10,6 +10,8 @@ import type { Match, MatchLocation, MatchHistoryItem } from "@/mocks/matches";
 interface CreateMatchPayload {
   title: string;
   location: string;
+  address?: string;
+  matchLevel?: string;
   date: string;
   time: string;
   playersNeeded: number;

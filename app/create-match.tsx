@@ -8,13 +8,14 @@ import {
   Alert,
 } from "react-native";
 import { Header } from "@/components/Header";
-import { Calendar, Clock, MapPin, Users, DollarSign } from "lucide-react-native";
+import { Calendar, Clock, MapPin, Users, DollarSign, Navigation } from "lucide-react-native";
 import { useNotifications } from "@/contexts/NotificationContext";
 import { createMatch } from "@/services/matchService";
 
 const types = ["Fútbol 5", "Fútbol 7", "Fútbol 8", "Fútbol 11"];
 const genders = ["Mixto", "Varones", "Mujeres"];
 const intensities = ["Baja", "Media", "Alta"];
+const matchLevels = ["Amistoso", "Competitivo"];
 
 function OptionPill({
   label,
@@ -56,6 +57,8 @@ export default function CreateMatchScreen() {
   const [type, setType] = useState("Fútbol 5");
   const [gender, setGender] = useState("Mixto");
   const [intensity, setIntensity] = useState("Media");
+  const [address, setAddress] = useState("");
+  const [matchLevel, setMatchLevel] = useState("Amistoso");
   const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async () => {
@@ -72,6 +75,8 @@ export default function CreateMatchScreen() {
       await createMatch({
         title: title.trim(),
         location: location.trim(),
+        address: address.trim(),
+        matchLevel,
         date,
         time,
         playersNeeded: Number(playersNeeded) || 0,
@@ -124,13 +129,29 @@ export default function CreateMatchScreen() {
             <View className="h-px bg-gray-800" />
 
             <View className="gap-1">
-              <Text className="text-gray-400 text-xs mb-1">Ubicación</Text>
+              <Text className="text-gray-400 text-xs mb-1">Ubicación (barrio)</Text>
               <View className="flex-row items-center gap-2">
                 <MapPin color="#9ca3af" size={16} />
                 <TextInput
                   value={location}
                   onChangeText={setLocation}
                   placeholder="Barrio o zona"
+                  placeholderTextColor="#6b7280"
+                  className="text-white text-sm flex-1"
+                />
+              </View>
+            </View>
+
+            <View className="h-px bg-gray-800" />
+
+            <View className="gap-1">
+              <Text className="text-gray-400 text-xs mb-1">Dirección de la cancha</Text>
+              <View className="flex-row items-center gap-2">
+                <Navigation color="#9ca3af" size={16} />
+                <TextInput
+                  value={address}
+                  onChangeText={setAddress}
+                  placeholder="Av. Ejemplo 1234"
                   placeholderTextColor="#6b7280"
                   className="text-white text-sm flex-1"
                 />
@@ -213,6 +234,20 @@ export default function CreateMatchScreen() {
                   label={i}
                   selected={intensity === i}
                   onPress={() => setIntensity(i)}
+                />
+              ))}
+            </View>
+          </View>
+
+          <View className="gap-2">
+            <Text className="text-gray-400 text-xs mb-1">Nivel del partido</Text>
+            <View className="flex-row flex-wrap">
+              {matchLevels.map((ml) => (
+                <OptionPill
+                  key={ml}
+                  label={ml}
+                  selected={matchLevel === ml}
+                  onPress={() => setMatchLevel(ml)}
                 />
               ))}
             </View>

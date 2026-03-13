@@ -1,5 +1,5 @@
 import { View, Text, ScrollView } from "react-native";
-import { Calendar, MapPin, Trophy } from "lucide-react-native";
+import { Calendar, MapPin, Trophy, Swords } from "lucide-react-native";
 import { Header } from "@/components/Header";
 import { matchHistory } from "@/mocks/matches";
 
@@ -33,9 +33,10 @@ const getResultColor = (type: string) => {
 };
 
 export default function MatchHistoryScreen() {
-  const wins = matchHistory.filter((m) => m.resultType === "win").length;
-  const draws = matchHistory.filter((m) => m.resultType === "draw").length;
-  const losses = matchHistory.filter((m) => m.resultType === "loss").length;
+  const tournamentMatches = matchHistory.filter((m) => m.isTournament);
+  const wins = tournamentMatches.filter((m) => m.resultType === "win").length;
+  const draws = tournamentMatches.filter((m) => m.resultType === "draw").length;
+  const losses = tournamentMatches.filter((m) => m.resultType === "loss").length;
 
   return (
     <View className="flex-1 bg-black">
@@ -45,6 +46,9 @@ export default function MatchHistoryScreen() {
         className="flex-1"
         contentContainerClassName="px-4 py-6 pb-6"
       >
+        <Text className="text-gray-500 text-xs mb-2 uppercase">
+          Estadísticas de torneos
+        </Text>
         <View className="flex-row gap-3 mb-6">
           <View className="flex-1 bg-green-500/10 border border-green-500/20 rounded-xl p-4 items-center">
             <Trophy color="#4ade80" size={20} />
@@ -66,6 +70,9 @@ export default function MatchHistoryScreen() {
           </View>
         </View>
 
+        <Text className="text-gray-500 text-xs mb-3 uppercase">
+          Todos los partidos
+        </Text>
         <View className="gap-3">
           {matchHistory.map((match) => {
             const colors = getResultColor(match.resultType);
@@ -78,6 +85,15 @@ export default function MatchHistoryScreen() {
                   <View className="flex-row items-center gap-2">
                     <Calendar color="#9ca3af" size={16} />
                     <Text className="text-sm text-gray-400">{match.date}</Text>
+                    {match.isTournament ? (
+                      <View className="px-2 py-0.5 bg-purple-500/10 border border-purple-500/30 rounded-full">
+                        <Text className="text-[10px] text-purple-400">Torneo</Text>
+                      </View>
+                    ) : (
+                      <View className="px-2 py-0.5 bg-gray-500/10 border border-gray-700 rounded-full">
+                        <Text className="text-[10px] text-gray-400">Amistoso</Text>
+                      </View>
+                    )}
                   </View>
                   <View
                     className={`px-3 py-1 rounded-full border ${colors.bg} ${colors.border}`}

@@ -11,7 +11,8 @@ interface PlayerCardProps {
   onInvite?: () => void;
   onAccept?: () => void;
   onReject?: () => void;
-  mode?: "invite" | "connect" | "request";
+  onPress?: () => void;
+  mode?: "invite" | "connect" | "request" | "details";
 }
 
 export function PlayerCard({
@@ -24,12 +25,13 @@ export function PlayerCard({
   onInvite,
   onAccept,
   onReject,
+  onPress,
   mode = "invite",
 }: PlayerCardProps) {
   if (mode === "request") {
     return (
       <View className="bg-[#1a1a1a] rounded-xl p-4 border border-gray-800">
-        <View className="flex-row items-center gap-4 mb-3">
+        <Pressable onPress={onPress} className="flex-row items-center gap-4 mb-3">
           <View className="w-14 h-14 rounded-full bg-gray-700 items-center justify-center overflow-hidden">
             {photoUrl ? (
               <Image
@@ -55,7 +57,7 @@ export function PlayerCard({
               <Text className="text-sm text-gray-500">{distance}</Text>
             </View>
           </View>
-        </View>
+        </Pressable>
 
         <View className="flex-row gap-2">
           <Pressable
@@ -77,12 +79,47 @@ export function PlayerCard({
     );
   }
 
+  if (mode === "details") {
+    return (
+      <Pressable
+        onPress={onPress}
+        className="bg-[#1a1a1a] rounded-xl p-4 border border-gray-800 flex-row items-center gap-4"
+      >
+        <View className="w-14 h-14 rounded-full bg-gray-700 items-center justify-center overflow-hidden">
+          {photoUrl ? (
+            <Image
+              source={{ uri: photoUrl }}
+              className="w-full h-full"
+              resizeMode="cover"
+            />
+          ) : (
+            <Text className="text-xl text-white">{name.charAt(0)}</Text>
+          )}
+        </View>
+
+        <View className="flex-1">
+          <Text className="text-white font-medium mb-1">{name}</Text>
+          <View className="flex-row items-center gap-2 mb-1">
+            <Text className="text-sm text-gray-400">{position}</Text>
+            <View className="px-2 py-0.5 bg-[#0a0a0a] rounded-full border border-gray-800">
+              <Text className="text-xs text-gray-300">{level}</Text>
+            </View>
+          </View>
+          <View className="flex-row items-center gap-1">
+            <MapPin color="#6b7280" size={12} />
+            <Text className="text-sm text-gray-500">{distance}</Text>
+          </View>
+        </View>
+      </Pressable>
+    );
+  }
+
   const isConnect = mode === "connect";
   const idleLabel = isConnect ? "Conectar" : "Invitar";
   const invitedLabel = isConnect ? "Pendiente" : "Enviado";
 
   return (
-    <View className="bg-[#1a1a1a] rounded-xl p-4 border border-gray-800 flex-row items-center gap-4">
+    <Pressable onPress={onPress} className="bg-[#1a1a1a] rounded-xl p-4 border border-gray-800 flex-row items-center gap-4">
       <View className="w-14 h-14 rounded-full bg-gray-700 items-center justify-center overflow-hidden">
         {photoUrl ? (
           <Image
@@ -135,6 +172,6 @@ export function PlayerCard({
           </>
         )}
       </Pressable>
-    </View>
+    </Pressable>
   );
 }
